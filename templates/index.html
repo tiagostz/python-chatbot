@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot</title>
+    <style>
+        :root {
+            --user-color: #4f8cff;
+            --other-color: #e5e5ea;
+            --bg-color: #f7f7fa;
+            --header-bg: #232946;
+            --header-color: #fff;
+            --input-bg: #fff;
+            --input-border: #d1d1d1;
+            --bubble-radius: 18px;
+            --avatar-size: 32px;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: #232946;
+            transition: background 0.3s, color 0.3s;
+        }
+        #top-bar {
+            background: var(--header-bg);
+            color: var(--header-color);
+            padding: 20px 0 16px 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        #top-bar h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+        }
+        #chat-container {
+            padding: 20px 10px 10px 10px;
+            height: calc(100vh - 180px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: var(--bg-color);
+            scroll-behavior: smooth;
+        }
+        .message-row {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 2px;
+        }
+        .message-row.user {
+            flex-direction: row-reverse;
+        }
+        .avatar {
+            width: var(--avatar-size);
+            height: var(--avatar-size);
+            border-radius: 50%;
+            background: #bdbdbd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #fff;
+            margin: 0 8px;
+            font-size: 1rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: var(--bubble-radius);
+            font-size: 1rem;
+            line-height: 1.4;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            word-break: break-word;
+            position: relative;
+        }
+        .message-row.user .bubble {
+            background: var(--user-color);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            border-bottom-left-radius: var(--bubble-radius);
+        }
+        .message-row.other .bubble {
+            background: var(--other-color);
+            color: #232946;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: var(--bubble-radius);
+        }
+        #input-container {
+            display: flex;
+            align-items: center;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--input-bg);
+            padding: 16px 10px;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+            gap: 10px;
+        }
+        #input-container input[type="text"] {
+            padding: 12px;
+            border: 1px solid var(--input-border);
+            outline: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: var(--input-bg);
+            transition: border 0.2s;
+        }
+        #input-container input[type="text"]:focus {
+            border: 1.5px solid var(--user-color);
+        }
+        #input-container input#usuario {
+            width: 22%;
+            min-width: 90px;
+        }
+        #input-container input#mensagem {
+            flex: 1;
+        }
+        #input-container button {
+            padding: 0 18px;
+            height: 44px;
+            background: var(--user-color);
+            color: #fff;
+            border: none;
+            outline: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        #input-container button:hover {
+            background: #2563eb;
+        }
+        /* Modo escuro */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --user-color: #2563eb;
+                --other-color: #232946;
+                --bg-color: #181a20;
+                --header-bg: #181a20;
+                --header-color: #fff;
+                --input-bg: #232946;
+                --input-border: #232946;
+            }
+            body {
+                color: #fff;
+            }
+            .bubble {
+                color: #fff;
+            }
+            #input-container input[type="text"] {
+                color: #fff;
+            }
+        }
+        @media (max-width: 600px) {
+            #chat-container {
+                padding: 10px 2px 80px 2px;
+            }
+            #input-container input#usuario {
+                width: 30%;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.1/socket.io.js" integrity="sha512-Z6C1p1NIexPj5MsVUunW4pg7uMX6/TT3CUVldmjXx2kpip1eZcrAnxIusDxyFIikyM9A61zOVNgvLr/TGudOQg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js" integrity="sha512-3gJwYpMe3QewGELv8k/BX9vcqhryRdzRMxVfq6ngyWXwo03GFEzjsUm8Q7RZcHPHksttq7/GFoxjCVUjkjvPdw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+    <div id="top-bar">
+        <h1>ChatBot</h1>
+    </div>
+
+    <div id="chat-container">
+        <!-- Mensagens serão inseridas aqui -->
+    </div>
+
+    <div id="input-container">
+        <input type="text" id="usuario" placeholder="Usuário" required autocomplete="off">
+        <input type="text" id="mensagem" placeholder="Mensagem" required autocomplete="off">
+        <button id="botao" title="Enviar mensagem">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var socket = io("http://192.168.0.45:5000");
+            var usuarioAtual = '';
+
+            // Salva o nome do usuário ao digitar
+            $('#usuario').on('change blur', function() {
+                usuarioAtual = $('#usuario').val().trim();
+            });
+
+            // Função para gerar avatar (primeira letra do usuário)
+            function gerarAvatar(nome) {
+                var letra = nome && nome.length > 0 ? nome[0].toUpperCase() : '?';
+                return '<div class="avatar">' + letra + '</div>';
+            }
+
+            // Função para adicionar mensagem ao chat
+            function adicionarMensagem(usuario, mensagem) {
+                var isUser = usuarioAtual && usuario === usuarioAtual;
+                var rowClass = isUser ? 'user' : 'other';
+                var avatar = gerarAvatar(usuario);
+                var bubble = '<div class="bubble">' + mensagem + '</div>';
+                var html = '<div class="message-row ' + rowClass + '">' + avatar + bubble + '</div>';
+                $('#chat-container').append(html);
+                // Scroll suave para o final
+                $('#chat-container').stop().animate({ scrollTop: $('#chat-container')[0].scrollHeight }, 400);
+            }
+
+            socket.on("connect", function() {
+                console.log("conectou");
+            });
+
+            socket.on("message", function(data) {
+                // Espera formato "usuario: mensagem"
+                var partes = data.split(": ");
+                var usuario = partes[0] || 'Bot';
+                var mensagem = partes.slice(1).join(": ") || data;
+                adicionarMensagem(usuario, mensagem);
+            });
+
+            function enviarMensagem() {
+                var usuario = $('#usuario').val().trim();
+                var mensagem = $('#mensagem').val().trim();
+                if (!usuario) {
+                    alert('Por favor, preencha o nome de usuário.');
+                    $('#usuario').focus();
+                    return;
+                }
+                if (!mensagem) {
+                    alert('Por favor, digite uma mensagem.');
+                    $('#mensagem').focus();
+                    return;
+                }
+                usuarioAtual = usuario;
+                socket.send(usuario + ": " + mensagem);
+                $('#mensagem').val('');
+                $('#mensagem').focus();
+            }
+
+            // Clique no botão enviar
+            $("#botao").on('click', function(e) {
+                e.preventDefault();
+                enviarMensagem();
+            });
+            // Pressionar Enter no campo de mensagem
+            $("#mensagem").on('keypress', function(event) {
+                if (event.key === "Enter") {
+                    enviarMensagem();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
